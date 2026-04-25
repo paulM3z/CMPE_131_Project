@@ -1,0 +1,96 @@
+"""
+FastAPI application entry point.
+
+Startup order:
+  1. Create DB tables (if they don't exist)
+  2. Mount static files
+  3. Register session middleware (for flash messages)
+  4. Register global exception handlers
+  5. Include all routers
+
+To run:
+  uvicorn app.main:app --reload --port 8000
+"""
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
+
+from app.config import PROFILE_UPLOAD_DIR, SESSION_SECRET_KEY
+from app.database import create_tables
+from app.dependencies import ForbiddenException, NotAuthenticatedException
+from app.routers import auth, clubs, events, settings, users
+
+# ---------------------------------------------------------------------------
+# App instance
+# ---------------------------------------------------------------------------
+
+app = FastAPI(
+    title="Campus Event & Club Management System",
+    description="Manage campus clubs and events.",
+    version="1.0.0",
+    # Disable automatic /docs and /redoc in production; fine for development
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+)
+
+# ---------------------------------------------------------------------------
+# Middleware
+# ---------------------------------------------------------------------------
+
+# Session middleware must be added BEFORE routers so flash messages work
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET_KEY,
+    session_cookie="session",
+    max_age=60 * 60 * 24,  # 24 hours
+    https_only=False,      # Set True in production with HTTPS
+    same_site="lax",
+)
+
+# ---------------------------------------------------------------------------
+# Static files
+# ---------------------------------------------------------------------------
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# ---------------------------------------------------------------------------
+# Exception handlers
+# ---------------------------------------------------------------------------
+
+@app.exception_handler(NotAuthenticatedException)
+async def not_authenticated_handler(request: Request, exc: NotAuthenticatedException):
+    """Redirect unauthenticated users to the login page."""
+    next_url = request.url.path
+    return RedirectResponse(url=f"/auth/login?next={next_url}", status_code=302)
+
+
+@app.exception_handler(ForbiddenException)
+async def forbidden_handler(request: Request, exc: ForbiddenException):
+    """Redirect to dashboard with an error flash on permission denied."""
+    from fastapi.templating import Jinja2Templates
+    templates = Jinja2Templates(directory="app/templates")
+    request.session["flash"] = {"message": exc.message, "category": "error"}
+    return RedirectResponse(url="/", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Startup: create tables
+# ---------------------------------------------------------------------------
+
+@app.on_event("startup")
+def on_startup():
+    """Initialize database tables on first run."""
+    create_tables()
+    PROFILE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Routers
+# ---------------------------------------------------------------------------
+
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(clubs.router)
+app.include_router(events.router)
+app.include_router(settings.router)

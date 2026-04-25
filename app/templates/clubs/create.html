@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Create Club{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="breadcrumb"><a href="/clubs" class="link">Clubs</a> / Create</div>
+        <h1 class="page-title">Create a New Club</h1>
+    </div>
+</div>
+
+<div class="form-container">
+    <div class="card">
+        <div class="card-body">
+            {% if errors %}
+            <div class="alert alert-error">
+                <ul class="error-list">
+                    {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form action="/clubs/create" method="post" class="form" novalidate>
+
+                <div class="form-group">
+                    <label for="name" class="form-label">Club Name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" class="form-input"
+                           value="{{ form.name if form else '' }}"
+                           placeholder="e.g. SJSU Photography Club"
+                           required maxlength="100" autofocus />
+                    <span class="form-hint">Must be unique. 2–100 characters.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="description" class="form-label">Description <span class="optional">(optional)</span></label>
+                    <textarea id="description" name="description" class="form-input form-textarea"
+                              placeholder="What is this club about? Who should join?"
+                              maxlength="1000" rows="4">{{ form.description if form else '' }}</textarea>
+                    <span class="form-hint">Up to 1,000 characters.</span>
+                </div>
+
+                <div class="form-group form-group-inline">
+                    <label class="form-label">Visibility</label>
+                    <label class="toggle-label">
+                        <input type="checkbox" name="is_private" value="true" class="toggle-input"
+                               {{ 'checked' if form and form.is_private else '' }} />
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Private club (members must be approved)</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <a href="/clubs" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create Club</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

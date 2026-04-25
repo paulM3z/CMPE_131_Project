@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Account Settings</h1>
+    <p class="page-subtitle">Manage your profile and preferences.</p>
+</div>
+
+<div class="settings-grid">
+
+    <!-- Profile Section -->
+    <section class="settings-section">
+        <h2 class="settings-section-title">Profile</h2>
+
+        <div class="card settings-card">
+            <div class="card-body">
+                <h3 class="settings-item-title">Profile Photo</h3>
+                <p class="settings-item-desc">Upload a JPG, PNG, GIF, or WEBP image up to 20 MB.</p>
+                <div class="profile-photo-panel">
+                    {% if current_user.profile_photo_url %}
+                    <img src="{{ current_user.profile_photo_url }}" alt="{{ current_user.username }} profile photo" class="profile-photo-preview" />
+                    {% else %}
+                    <div class="profile-photo-fallback">{{ current_user.username[0].upper() }}</div>
+                    {% endif %}
+                    <form action="/settings/profile-photo" method="post" enctype="multipart/form-data" class="settings-form settings-form-stack">
+                        <div class="form-group">
+                            <label for="profile_photo" class="form-label">Choose image</label>
+                            <input type="file" id="profile_photo" name="profile_photo" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" required />
+                            <span class="form-hint">Files over 20 MB will be rejected before saving.</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload Photo</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Username -->
+        <div class="card settings-card">
+            <div class="card-body">
+                <h3 class="settings-item-title">Username</h3>
+                <p class="settings-item-desc">Current: <strong>{{ current_user.username }}</strong></p>
+                <form action="/settings/username" method="post" class="settings-form">
+                    <div class="form-row">
+                        <input type="text" name="username" class="form-input"
+                               value="{{ current_user.username }}"
+                               minlength="3" maxlength="50" required
+                               placeholder="New username" />
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Change Email -->
+        <div class="card settings-card">
+            <div class="card-body">
+                <h3 class="settings-item-title">Email Address</h3>
+                <p class="settings-item-desc">Current: <strong>{{ current_user.email }}</strong></p>
+                <form action="/settings/email" method="post" class="settings-form">
+                    <div class="form-row">
+                        <input type="email" name="email" class="form-input"
+                               value="{{ current_user.email }}"
+                               maxlength="255"
+                               required placeholder="New email address" />
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Change Phone -->
+        <div class="card settings-card">
+            <div class="card-body">
+                <h3 class="settings-item-title">Phone Number</h3>
+                <p class="settings-item-desc">
+                    Current: <strong>{{ current_user.phone_number if current_user.phone_number else 'Not set' }}</strong>
+                </p>
+                <form action="/settings/phone" method="post" class="settings-form">
+                    <div class="form-row">
+                        <input type="tel" name="phone_number" class="form-input"
+                               value="{{ current_user.phone_number or '' }}"
+                               placeholder="+1 (408) 555-0123 (leave blank to remove)" />
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Section -->
+    <section class="settings-section">
+        <h2 class="settings-section-title">Security</h2>
+
+        <div class="card settings-card">
+            <div class="card-body">
+                <h3 class="settings-item-title">Change Password</h3>
+                <p class="settings-item-desc">You'll be signed out after changing your password.</p>
+                <form action="/settings/password" method="post" class="settings-form settings-form-stack">
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <div class="input-with-toggle">
+                            <input type="password" name="current_password" id="current_password"
+                                   class="form-input" required placeholder="Current password" />
+                            <button type="button" class="toggle-password" data-target="current_password" aria-label="Show/hide">👁</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <div class="input-with-toggle">
+                            <input type="password" name="new_password" id="new_password"
+                                   class="form-input" required minlength="8" maxlength="72" placeholder="At least 8 characters" />
+                            <button type="button" class="toggle-password" data-target="new_password" aria-label="Show/hide">👁</button>
+                        </div>
+                    </div>
+                    <span class="form-hint">Keep passwords under 72 bytes when using special characters.</span>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <div class="input-with-toggle">
+                            <input type="password" name="confirm_password" id="confirm_password"
+                                   class="form-input" required minlength="8" maxlength="72" placeholder="Re-enter new password" />
+                            <button type="button" class="toggle-password" data-target="confirm_password" aria-label="Show/hide">👁</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Preferences Section -->
+    <section class="settings-section">
+        <h2 class="settings-section-title">Preferences</h2>
+
+        <div class="card settings-card">
+            <div class="card-body">
+                <h3 class="settings-item-title">Display &amp; Language</h3>
+                <form action="/settings/preferences" method="post" class="settings-form settings-form-stack">
+
+                    <div class="form-group">
+                        <label for="language" class="form-label">Language</label>
+                        <select id="language" name="language" class="form-input form-select">
+                            {% for code, name in languages.items() %}
+                            <option value="{{ code }}"
+                                {{ 'selected' if current_user.settings and current_user.settings.language == code else '' }}>
+                                {{ name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Theme</label>
+                        <div class="radio-group">
+                            {% for val, label in [('light', '☀ Light'), ('dark', '🌙 Dark')] %}
+                            <label class="radio-label">
+                                <input type="radio" name="theme" value="{{ val }}"
+                                       {{ 'checked' if current_user.settings and current_user.settings.theme == val else '' }} />
+                                {{ label }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Text Size</label>
+                        <div class="radio-group">
+                            {% for val, label in [('small', 'Small'), ('medium', 'Medium'), ('large', 'Large')] %}
+                            <label class="radio-label">
+                                <input type="radio" name="text_size" value="{{ val }}"
+                                       {{ 'checked' if current_user.settings and current_user.settings.text_size == val else '' }} />
+                                {{ label }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Preferences</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Account Info -->
+    <section class="settings-section">
+        <h2 class="settings-section-title">Account Info</h2>
+        <div class="card settings-card">
+            <div class="card-body">
+                <ul class="detail-list">
+                    <li class="detail-item">
+                        <span class="detail-label">Account ID</span>
+                        <span class="detail-value muted">#{{ current_user.id }}</span>
+                    </li>
+                    <li class="detail-item">
+                        <span class="detail-label">Role</span>
+                        <span class="detail-value">{{ 'Administrator' if current_user.is_admin else 'Student' }}</span>
+                    </li>
+                    <li class="detail-item">
+                        <span class="detail-label">Member Since</span>
+                        <span class="detail-value">{{ current_user.created_at.strftime('%B %d, %Y') }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

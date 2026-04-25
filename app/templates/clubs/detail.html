@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{{ club.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="breadcrumb"><a href="/clubs" class="link">Clubs</a> / {{ club.name }}</div>
+        <h1 class="page-title">{{ club.name }}</h1>
+        {% if club.is_private %}<span class="badge badge-muted">Private Club</span>{% endif %}
+    </div>
+    <div class="header-actions">
+        {% if membership and membership.is_approved %}
+            {% if is_owner %}
+            <span class="badge badge-owner">Owner</span>
+            {% else %}
+            <form action="/clubs/{{ club.id }}/leave" method="post" onsubmit="return confirm('Leave {{ club.name }}?')">
+                <button type="submit" class="btn btn-outline btn-danger">Leave Club</button>
+            </form>
+            {% endif %}
+        {% elif membership and not membership.is_approved %}
+            <span class="badge badge-muted">Pending Approval</span>
+        {% else %}
+            <form action="/clubs/{{ club.id }}/join" method="post">
+                <button type="submit" class="btn btn-primary">
+                    {{ 'Request to Join' if club.is_private else 'Join Club' }}
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+
+    <!-- Club Info -->
+    <div class="detail-main">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-section-title">About</h2>
+                {% if club.description %}
+                <p class="club-description">{{ club.description }}</p>
+                {% else %}
+                <p class="muted">No description provided.</p>
+                {% endif %}
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Members</span>
+                        <span class="info-value">{{ club.member_count }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Created</span>
+                        <span class="info-value">{{ club.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Visibility</span>
+                        <span class="info-value">{{ 'Private' if club.is_private else 'Public' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Club Events -->
+        {% if club.events %}
+        <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-body">
+                <div class="section-header">
+                    <h2 class="card-section-title">Club Events</h2>
+                    {% if membership and membership.is_approved %}
+                    <a href="/events/create" class="btn btn-outline btn-sm">+ Event</a>
+                    {% endif %}
+                </div>
+                <div class="card-list">
+                    {% for event in club.events | sort(attribute='event_date') %}
+                    <a href="/events/{{ event.id }}" class="card card-event card-compact">
+                        <div class="card-body">
+                            <h4 class="card-title">{{ event.title }}</h4>
+                            <div class="card-meta">
+                                <span class="meta-item">📅 {{ event.event_date.strftime('%b %d, %Y') }}</span>
+                                {% if event.location %}<span class="meta-item">📍 {{ event.location }}</span>{% endif %}
+                                <span class="meta-item">👥 {{ event.attendee_count }} attending</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Members Sidebar -->
+    <aside class="detail-sidebar">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-section-title">Members ({{ memberships | length }})</h2>
+                <ul class="member-list">
+                    {% for m in memberships %}
+                    <li class="member-item">
+                        <div class="member-info">
+                            {% if m.user.profile_photo_url %}
+                            <img src="{{ m.user.profile_photo_url }}" alt="{{ m.user.username }} profile photo" class="member-avatar member-avatar-image" />
+                            {% else %}
+                            <span class="member-avatar">{{ m.user.username[0].upper() }}</span>
+                            {% endif %}
+                            <div>
+                                <span class="member-name">{{ m.user.username }}</span>
+                                {% if m.role %}
+                                <span class="member-role {% if m.role.name == 'Owner' %}role-owner{% endif %}">
+                                    {{ m.role.name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if can_manage and m.user.id != current_user.id %}
+                        <form action="/clubs/{{ club.id }}/members/{{ m.user.id }}/remove" method="post"
+                              onsubmit="return confirm('Remove {{ m.user.username }} from this club?')">
+                            <button type="submit" class="btn-icon btn-danger-icon" title="Remove member">✕</button>
+                        </form>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        {% if is_owner %}
+        <div class="card card-danger" style="margin-top: 1rem;">
+            <div class="card-body">
+                <h3 class="card-section-title">Danger Zone</h3>
+                <form action="/clubs/{{ club.id }}/delete" method="post"
+                      onsubmit="return confirm('Permanently delete {{ club.name }}? This cannot be undone.')">
+                    <button type="submit" class="btn btn-danger btn-full">Delete Club</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </aside>
+
+</div>
+{% endblock %}

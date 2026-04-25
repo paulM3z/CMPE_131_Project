@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Campus Events</h1>
+        <p class="page-subtitle">Discover what's happening around campus.</p>
+    </div>
+    <a href="/events/create" class="btn btn-primary">+ Create Event</a>
+</div>
+
+{% if events %}
+<div class="grid-cards">
+    {% for event in events %}
+    <div class="card card-event-full">
+        <div class="card-date-strip {% if event.event_date < today %}date-past{% endif %}">
+            <span class="date-month">{{ event.event_date.strftime('%b') }}</span>
+            <span class="date-day">{{ event.event_date.strftime('%d') }}</span>
+        </div>
+        <div class="card-body">
+            <div class="card-top">
+                <h3 class="card-title">
+                    <a href="/events/{{ event.id }}" class="link-unstyled">{{ event.title }}</a>
+                </h3>
+                <div class="badge-group">
+                    {% if event.id in rsvp_event_ids %}
+                    <span class="badge badge-success">RSVP'd</span>
+                    {% endif %}
+                    {% if event.is_private %}
+                    <span class="badge badge-muted">Private</span>
+                    {% endif %}
+                    {% if event.is_full %}
+                    <span class="badge badge-warning">Full</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if event.description %}
+            <p class="card-desc">{{ event.description[:100] }}{% if event.description|length > 100 %}…{% endif %}</p>
+            {% endif %}
+
+            <div class="card-meta">
+                {% if event.event_time %}
+                <span class="meta-item">🕐 {{ event.event_time.strftime('%I:%M %p') }}</span>
+                {% endif %}
+                {% if event.location %}
+                <span class="meta-item">📍 {{ event.location }}</span>
+                {% endif %}
+                {% if event.club %}
+                <span class="meta-item">🏛 {{ event.club.name }}</span>
+                {% endif %}
+            </div>
+
+            {% if event.tags %}
+            <div class="tag-row">
+                {% for tag in event.tags %}<span class="tag">{{ tag.name }}</span>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if event.has_limited_capacity %}
+            <div class="hype-meter">
+                <div class="hype-meter-header">
+                    <span class="capacity-text">{{ event.spots_filled_text }}</span>
+                    <span class="badge {{ event.hype_status.badge_class }}">{{ event.hype_status.label }}</span>
+                </div>
+                <div class="progress hype-progress" role="progressbar" aria-valuenow="{{ event.fill_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {{ event.hype_status.progress_class }}" style="width: {{ event.fill_percentage }}%"></div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card-footer-row">
+                <span class="attendee-count">👥 {{ event.attendee_count }}{% if event.capacity %} / {{ event.capacity }}{% endif %} attending</span>
+                <div class="card-actions">
+                    <a href="/events/{{ event.id }}" class="btn btn-outline btn-sm">Details</a>
+                    {% if event.id not in rsvp_event_ids and not event.is_full %}
+                    <form action="/events/{{ event.id }}/rsvp" method="post" style="display:inline">
+                        <button type="submit" class="btn btn-primary btn-sm">RSVP</button>
+                    </form>
+                    {% elif event.id in rsvp_event_ids %}
+                    <form action="/events/{{ event.id }}/cancel-rsvp" method="post" style="display:inline">
+                        <button type="submit" class="btn btn-outline btn-sm">Cancel RSVP</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state empty-state-page">
+    <span class="empty-icon">📅</span>
+    <h2>No events yet</h2>
+    <p>Create the first campus event!</p>
+    <a href="/events/create" class="btn btn-primary">Create an Event</a>
+</div>
+{% endif %}
+{% endblock %}

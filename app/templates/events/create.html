@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Event' if edit_mode else 'Create Event' }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="breadcrumb">
+            <a href="/events" class="link">Events</a>
+            {% if edit_mode %} / <a href="/events/{{ event.id }}" class="link">{{ event.title }}</a>{% endif %}
+            / {{ 'Edit' if edit_mode else 'Create' }}
+        </div>
+        <h1 class="page-title">{{ 'Edit Event' if edit_mode else 'Create a New Event' }}</h1>
+    </div>
+</div>
+
+<div class="form-container">
+    <div class="card">
+        <div class="card-body">
+            {% if errors %}
+            <div class="alert alert-error">
+                <ul class="error-list">
+                    {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form action="{{ '/events/' + event.id|string + '/edit' if edit_mode else '/events/create' }}"
+                  method="post" class="form" novalidate>
+
+                <!-- Title -->
+                <div class="form-group">
+                    <label for="title" class="form-label">Event Title <span class="required">*</span></label>
+                    <input type="text" id="title" name="title" class="form-input"
+                           value="{{ form.title if form else '' }}"
+                           placeholder="e.g. Spring Networking Night"
+                           required maxlength="200" autofocus />
+                </div>
+
+                <!-- Date & Time -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="event_date" class="form-label">Date <span class="required">*</span></label>
+                        <input type="date" id="event_date" name="event_date" class="form-input"
+                               value="{{ form.event_date if form else '' }}" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="event_time" class="form-label">Time <span class="optional">(optional)</span></label>
+                        <input type="time" id="event_time" name="event_time" class="form-input"
+                               value="{{ form.event_time if form else '' }}" />
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="form-group">
+                    <label for="location" class="form-label">Location <span class="optional">(optional)</span></label>
+                    <input type="text" id="location" name="location" class="form-input"
+                           value="{{ form.location if form else '' }}"
+                           placeholder="e.g. Student Union Room 204, or Zoom link" />
+                </div>
+
+                <div class="form-group">
+                    <label for="map_query" class="form-label">Google Maps Location <span class="optional">(optional)</span></label>
+                    <input type="text" id="map_query" name="map_query" class="form-input"
+                           value="{{ form.map_query if form else '' }}"
+                           placeholder="e.g. SJSU Student Union, San Jose CA or a Google Maps search query" />
+                    <span class="form-hint">If left blank, CampusHub will use the location field for the Google Maps link.</span>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="description" class="form-label">Description <span class="optional">(optional)</span></label>
+                    <textarea id="description" name="description" class="form-input form-textarea"
+                              placeholder="What will happen at this event? Who should come?"
+                              rows="5" maxlength="5000">{{ form.description if form else '' }}</textarea>
+                </div>
+
+                <!-- Capacity & Club -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="capacity" class="form-label">Capacity <span class="optional">(optional)</span></label>
+                        <input type="number" id="capacity" name="capacity" class="form-input"
+                               value="{{ form.capacity if form else '' }}"
+                               min="1" placeholder="Leave blank for unlimited" />
+                    </div>
+                    <div class="form-group">
+                        <label for="club_id" class="form-label">Hosting Club <span class="optional">(optional)</span></label>
+                        <select id="club_id" name="club_id" class="form-input form-select">
+                            <option value="">— No club —</option>
+                            {% for club in user_clubs %}
+                            <option value="{{ club.id }}"
+                                {{ 'selected' if form and form.club_id == club.id|string else '' }}>
+                                {{ club.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="form-group">
+                    <label for="tags" class="form-label">Tags <span class="optional">(optional)</span></label>
+                    <input type="text" id="tags" name="tags" class="form-input"
+                           value="{{ form.tags if form else '' }}"
+                           placeholder="music, networking, car show  (comma-separated)" />
+                    <span class="form-hint">Comma-separated. Max 10 tags. e.g. <em>music, networking, outdoors</em></span>
+                </div>
+
+                <!-- Visibility -->
+                <div class="form-group form-group-inline">
+                    <label class="form-label">Visibility</label>
+                    <label class="toggle-label">
+                        <input type="checkbox" name="is_private" value="true" class="toggle-input"
+                               {{ 'checked' if form and form.is_private else '' }} />
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Private event (visible only to club members)</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ '/events/' + event.id|string if edit_mode else '/events' }}" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        {{ 'Save Changes' if edit_mode else 'Create Event' }}
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

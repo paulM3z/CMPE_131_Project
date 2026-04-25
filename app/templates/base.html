@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="{{ current_user.settings.language if current_user and current_user.settings else 'en' }}"
+      data-theme="{{ current_user.settings.theme if current_user and current_user.settings else 'light' }}"
+      data-text-size="{{ current_user.settings.text_size if current_user and current_user.settings else 'medium' }}">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Campus Events{% endblock %} | CampusHub</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <a href="/" class="brand-link">
+            <span class="brand-icon">🎓</span>
+            <span class="brand-name">CampusHub</span>
+        </a>
+    </div>
+
+    {% if current_user %}
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+    <div class="navbar-menu" id="navMenu">
+        <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Dashboard</a>
+        <a href="/clubs" class="nav-link {% if request.url.path.startswith('/clubs') %}active{% endif %}">Clubs</a>
+        <a href="/events" class="nav-link {% if request.url.path.startswith('/events') %}active{% endif %}">Events</a>
+        <div class="nav-divider"></div>
+        <div class="nav-user">
+            {% if current_user.profile_photo_url %}
+            <img src="{{ current_user.profile_photo_url }}" alt="{{ current_user.username }} profile photo" class="nav-avatar" />
+            {% else %}
+            <span class="member-avatar nav-avatar-fallback">{{ current_user.username[0].upper() }}</span>
+            {% endif %}
+            <span class="nav-username">{{ current_user.username }}</span>
+            {% if current_user.is_admin %}<span class="badge badge-admin">Admin</span>{% endif %}
+        </div>
+        <a href="/settings" class="nav-link {% if request.url.path.startswith('/settings') %}active{% endif %}">⚙ Settings</a>
+        <form action="/auth/logout" method="post" class="nav-logout-form">
+            <button type="submit" class="nav-link btn-logout">Sign Out</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="navbar-menu">
+        <a href="/auth/login" class="nav-link">Log In</a>
+        <a href="/auth/register" class="btn btn-primary">Sign Up</a>
+    </div>
+    {% endif %}
+</nav>
+
+<!-- Flash Message -->
+{% set flash = request.session.pop("flash", None) if request.session else None %}
+{% if flash %}
+<div class="flash flash-{{ flash.category }}" id="flashMessage">
+    <span>{{ flash.message }}</span>
+    <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+</div>
+{% endif %}
+
+<!-- Page Content -->
+<main class="main-content">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+    <p>CampusHub &copy; 2026 &mdash; Campus Event &amp; Club Management System</p>
+</footer>
+
+<script src="/static/js/main.js"></script>
+<script src="/static/js/countdown.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

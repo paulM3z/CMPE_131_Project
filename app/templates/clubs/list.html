@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Clubs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Campus Clubs</h1>
+        <p class="page-subtitle">Find your community.</p>
+    </div>
+    <a href="/clubs/create" class="btn btn-primary">+ Create Club</a>
+</div>
+
+{% if clubs %}
+<div class="grid-cards">
+    {% for club in clubs %}
+    <div class="card">
+        <div class="card-body">
+            <div class="card-top">
+                <h3 class="card-title">
+                    <a href="/clubs/{{ club.id }}" class="link-unstyled">{{ club.name }}</a>
+                </h3>
+                <div class="badge-group">
+                    {% if club.is_private %}<span class="badge badge-muted">Private</span>{% endif %}
+                    {% if club.id in user_club_ids %}<span class="badge badge-success">Joined</span>{% endif %}
+                </div>
+            </div>
+
+            {% if club.description %}
+            <p class="card-desc">{{ club.description[:120] }}{% if club.description|length > 120 %}…{% endif %}</p>
+            {% else %}
+            <p class="card-desc muted">No description provided.</p>
+            {% endif %}
+
+            <p class="card-meta-text">👥 {{ club.member_count }} member{{ 's' if club.member_count != 1 else '' }}</p>
+
+            <div class="card-actions">
+                <a href="/clubs/{{ club.id }}" class="btn btn-outline btn-sm">View Club</a>
+                {% if club.id not in user_club_ids %}
+                <form action="/clubs/{{ club.id }}/join" method="post" style="display:inline">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        {{ 'Request to Join' if club.is_private else 'Join' }}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state empty-state-page">
+    <span class="empty-icon">🏛</span>
+    <h2>No clubs yet</h2>
+    <p>Be the first to create a campus club!</p>
+    <a href="/clubs/create" class="btn btn-primary">Create a Club</a>
+</div>
+{% endif %}
+{% endblock %}

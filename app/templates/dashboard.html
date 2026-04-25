@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Welcome back, {{ current_user.username }}! 👋</h1>
+    <p class="page-subtitle">Here's what's happening on campus.</p>
+</div>
+
+<div class="dashboard-grid">
+
+    <!-- Upcoming Events -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-title">Upcoming Events</h2>
+            <a href="/events/create" class="btn btn-primary btn-sm">+ New Event</a>
+        </div>
+
+        {% if upcoming_events %}
+        <div class="card-list">
+            {% for event in upcoming_events %}
+            <a href="/events/{{ event.id }}" class="card card-event">
+                <div class="card-body">
+                    <div class="card-top">
+                        <h3 class="card-title">{{ event.title }}</h3>
+                        {% if event.id in rsvp_event_ids %}
+                        <span class="badge badge-success">RSVP'd</span>
+                        {% endif %}
+                        {% if event.is_private %}
+                        <span class="badge badge-muted">Private</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-meta">
+                        <span class="meta-item">📅 {{ event.event_date.strftime('%b %d, %Y') }}</span>
+                        {% if event.event_time %}
+                        <span class="meta-item">🕐 {{ event.event_time.strftime('%I:%M %p') }}</span>
+                        {% endif %}
+                        {% if event.location %}
+                        <span class="meta-item">📍 {{ event.location }}</span>
+                        {% endif %}
+                        {% if event.club %}
+                        <span class="meta-item">🏛 {{ event.club.name }}</span>
+                        {% endif %}
+                    </div>
+                    <div
+                        class="countdown-widget countdown-widget-mini"
+                        data-event-id="{{ event.id }}"
+                        data-countdown-style="mini"
+                        data-event-time="{{ event.event_date.isoformat() }}T{{ event.event_time.strftime('%H:%M:%S') if event.event_time else '00:00:00' }}"
+                    >
+                        Loading countdown...
+                    </div>
+                    {% if event.has_limited_capacity %}
+                    <div class="hype-meter">
+                        <div class="hype-meter-header">
+                            <span class="capacity-text">{{ event.spots_filled_text }}</span>
+                            <span class="badge {{ event.hype_status.badge_class }}">{{ event.hype_status.label }}</span>
+                        </div>
+                        <div class="progress hype-progress" role="progressbar" aria-valuenow="{{ event.fill_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar {{ event.hype_status.progress_class }}" style="width: {{ event.fill_percentage }}%"></div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="card-attendees">{{ event.attendee_count }} attending</p>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">📅</span>
+            <p>No upcoming events yet.</p>
+            <a href="/events/create" class="btn btn-outline">Create the first one</a>
+        </div>
+        {% endif %}
+
+        <div class="section-footer">
+            <a href="/events" class="link">View all events →</a>
+        </div>
+    </section>
+
+    <!-- My Clubs -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-title">My Clubs</h2>
+            <a href="/clubs/create" class="btn btn-primary btn-sm">+ New Club</a>
+        </div>
+
+        {% if user_clubs %}
+        <div class="card-list">
+            {% for club in user_clubs %}
+            <a href="/clubs/{{ club.id }}" class="card card-club">
+                <div class="card-body">
+                    <div class="card-top">
+                        <h3 class="card-title">{{ club.name }}</h3>
+                        {% if club.is_private %}
+                        <span class="badge badge-muted">Private</span>
+                        {% endif %}
+                    </div>
+                    {% if club.description %}
+                    <p class="card-desc">{{ club.description[:100] }}{% if club.description|length > 100 %}…{% endif %}</p>
+                    {% endif %}
+                    <p class="card-meta-text">{{ club.member_count }} member{{ 's' if club.member_count != 1 else '' }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">🏛</span>
+            <p>You haven't joined any clubs yet.</p>
+            <a href="/clubs" class="btn btn-outline">Browse clubs</a>
+        </div>
+        {% endif %}
+
+        <div class="section-footer">
+            <a href="/clubs" class="link">Browse all clubs →</a>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

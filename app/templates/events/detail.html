@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="breadcrumb"><a href="/events" class="link">Events</a> / {{ event.title }}</div>
+        <h1 class="page-title">{{ event.title }}</h1>
+        <div class="badge-group" style="margin-top:0.5rem">
+            {% if event.is_private %}<span class="badge badge-muted">Private</span>{% endif %}
+            {% if event.is_full %}<span class="badge badge-warning">At Capacity</span>{% endif %}
+            {% if rsvp %}<span class="badge badge-success">You're Going!</span>{% endif %}
+            {% if event.has_limited_capacity %}
+            <span class="badge {{ event.hype_status.badge_class }}">{{ event.hype_status.label }}</span>
+            {% endif %}
+        </div>
+        <div
+            class="countdown-widget countdown-widget-detail"
+            data-event-id="{{ event.id }}"
+            data-countdown-style="detail"
+            data-event-time="{{ event.event_date.isoformat() }}T{{ event.event_time.strftime('%H:%M:%S') if event.event_time else '00:00:00' }}"
+        >
+            <span class="countdown-label">Event starts in:</span>
+            <span class="countdown-value">Loading countdown...</span>
+        </div>
+    </div>
+    <div class="header-actions">
+        {% if rsvp %}
+        <form action="/events/{{ event.id }}/cancel-rsvp" method="post">
+            <button type="submit" class="btn btn-outline">Cancel RSVP</button>
+        </form>
+        {% elif not event.is_full %}
+        <form action="/events/{{ event.id }}/rsvp" method="post">
+            <button type="submit" class="btn btn-primary">RSVP to This Event</button>
+        </form>
+        {% else %}
+        <button class="btn btn-outline" disabled>Event Full</button>
+        {% endif %}
+        {% if can_edit %}
+        <a href="/events/{{ event.id }}/edit" class="btn btn-outline">✏ Edit</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+
+    <!-- Main Content -->
+    <div class="detail-main">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-section-title">About This Event</h2>
+                {% if event.description %}
+                <p class="event-description">{{ event.description }}</p>
+                {% else %}
+                <p class="muted">No description provided.</p>
+                {% endif %}
+
+                {% if event.tags %}
+                <div class="tag-row" style="margin-top:1rem">
+                    {% for tag in event.tags %}<span class="tag">{{ tag.name }}</span>{% endfor %}
+                </div>
+                {% endif %}
+
+                {% if event.has_limited_capacity %}
+                <div class="event-hype-panel">
+                    <div class="hype-meter-header">
+                        <strong>Event Hype Meter</strong>
+                        <span class="capacity-text">{{ event.spots_filled_text }}</span>
+                    </div>
+                    <div class="progress hype-progress hype-progress-lg" role="progressbar" aria-valuenow="{{ event.fill_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar {{ event.hype_status.progress_class }}" style="width: {{ event.fill_percentage }}%"></div>
+                    </div>
+                    <p class="hype-meter-caption">{{ event.fill_percentage }}% full right now.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Attendees -->
+        <div class="card" style="margin-top:1.5rem">
+            <div class="card-body">
+                <h2 class="card-section-title">
+                    Attendees
+                    <span class="count-badge">{{ event.attendee_count }}{% if event.capacity %} / {{ event.capacity }}{% endif %}</span>
+                </h2>
+                {% if event.has_limited_capacity %}
+                <div class="progress hype-progress hype-progress-lg" role="progressbar" aria-valuenow="{{ event.fill_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {{ event.hype_status.progress_class }}" style="width: {{ event.fill_percentage }}%"></div>
+                </div>
+                <p class="capacity-text">{{ event.spots_filled_text }}</p>
+                {% endif %}
+                {% if event.attendees %}
+                <ul class="attendee-list">
+                    {% for attendee in event.attendees %}
+                    {% if attendee.is_public %}
+                    <li class="attendee-item">
+                        {% if attendee.user.profile_photo_url %}
+                        <img src="{{ attendee.user.profile_photo_url }}" alt="{{ attendee.user.username }} profile photo" class="member-avatar member-avatar-image" />
+                        {% else %}
+                        <span class="member-avatar">{{ attendee.user.username[0].upper() }}</span>
+                        {% endif %}
+                        <span>{{ attendee.user.username }}</span>
+                        {% if attendee.user.id == current_user.id %}
+                        <span class="badge badge-success">You</span>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="muted">No one has RSVP'd yet. Be the first!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="detail-sidebar">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-section-title">Event Details</h2>
+                <ul class="detail-list">
+                    <li class="detail-item">
+                        <span class="detail-icon">📅</span>
+                        <div>
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value">{{ event.event_date.strftime('%A, %B %d, %Y') }}</span>
+                        </div>
+                    </li>
+                    {% if event.event_time %}
+                    <li class="detail-item">
+                        <span class="detail-icon">🕐</span>
+                        <div>
+                            <span class="detail-label">Time</span>
+                            <span class="detail-value">{{ event.event_time.strftime('%I:%M %p') }}</span>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% if event.location %}
+                    <li class="detail-item">
+                        <span class="detail-icon">📍</span>
+                        <div>
+                            <span class="detail-label">Location</span>
+                            <span class="detail-value">{{ event.location }}</span>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% if event.google_maps_url %}
+                    <li class="detail-item">
+                        <span class="detail-icon">ðŸ—º</span>
+                        <div>
+                            <span class="detail-label">Map</span>
+                            <a href="{{ event.google_maps_url }}" target="_blank" rel="noopener noreferrer" class="detail-value link">Open in Google Maps</a>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% if event.club %}
+                    <li class="detail-item">
+                        <span class="detail-icon">🏛</span>
+                        <div>
+                            <span class="detail-label">Hosted by</span>
+                            <a href="/clubs/{{ event.club.id }}" class="detail-value link">{{ event.club.name }}</a>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% if event.capacity %}
+                    <li class="detail-item">
+                        <span class="detail-icon">🪑</span>
+                        <div>
+                            <span class="detail-label">Capacity</span>
+                            <span class="detail-value">{{ event.capacity }} spots</span>
+                        </div>
+                    </li>
+                    {% endif %}
+                    <li class="detail-item">
+                        <span class="detail-icon">👤</span>
+                        {% if event.creator and event.creator.profile_photo_url %}
+                        <img src="{{ event.creator.profile_photo_url }}" alt="{{ event.creator.username }} profile photo" class="member-avatar member-avatar-image detail-avatar" />
+                        {% endif %}
+                        <div>
+                            <span class="detail-label">Organizer</span>
+                            <span class="detail-value">{{ event.creator.username if event.creator else 'Unknown' }}</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        {% if event.google_maps_embed_url %}
+        <div class="card" style="margin-top:1rem">
+            <div class="card-body">
+                <h3 class="card-section-title">Map Preview</h3>
+                <div class="map-embed">
+                    <iframe
+                        src="{{ event.google_maps_embed_url }}"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        title="Map preview for {{ event.title }}"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if can_edit %}
+        <div class="card card-danger" style="margin-top:1rem">
+            <div class="card-body">
+                <h3 class="card-section-title">Manage Event</h3>
+                <div class="btn-stack">
+                    <a href="/events/{{ event.id }}/edit" class="btn btn-outline btn-full">Edit Event</a>
+                    <form action="/events/{{ event.id }}/delete" method="post"
+                          onsubmit="return confirm('Permanently delete this event?')">
+                        <button type="submit" class="btn btn-danger btn-full">Delete Event</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </aside>
+
+</div>
+{% endblock %}

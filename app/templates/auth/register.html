@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <span class="auth-icon">🎓</span>
+            <h1 class="auth-title">Create account</h1>
+            <p class="auth-subtitle">Join your campus community</p>
+        </div>
+
+        {% if errors %}
+        <div class="alert alert-error">
+            <ul class="error-list">
+                {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form action="/auth/register" method="post" class="auth-form" novalidate>
+
+            <div class="form-group">
+                <label for="username" class="form-label">Username <span class="required">*</span></label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="form-input"
+                    value="{{ form.username if form else '' }}"
+                    placeholder="e.g. spartan_student"
+                    required
+                    autofocus
+                    minlength="3"
+                    maxlength="50"
+                />
+                <span class="form-hint">Letters, numbers, underscores, dots, hyphens. 3–50 chars.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email <span class="required">*</span></label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="form-input"
+                    value="{{ form.email if form else '' }}"
+                    placeholder="you@sjsu.edu"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="phone_number" class="form-label">Phone Number <span class="optional">(optional)</span></label>
+                <input
+                    type="tel"
+                    id="phone_number"
+                    name="phone_number"
+                    class="form-input"
+                    value="{{ form.phone_number if form else '' }}"
+                    placeholder="+1 (408) 555-0123"
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password <span class="required">*</span></label>
+                <div class="input-with-toggle">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        placeholder="At least 8 characters"
+                        required
+                        minlength="8"
+                        maxlength="72"
+                    />
+                    <button type="button" class="toggle-password" data-target="password" aria-label="Show/hide password">👁</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Password <span class="required">*</span></label>
+                <div class="input-with-toggle">
+                    <input
+                        type="password"
+                        id="confirm_password"
+                        name="confirm_password"
+                        class="form-input"
+                        placeholder="Re-enter your password"
+                        required
+                        minlength="8"
+                        maxlength="72"
+                    />
+                    <button type="button" class="toggle-password" data-target="confirm_password" aria-label="Show/hide password">👁</button>
+                </div>
+            </div>
+
+            <span class="form-hint">Keep passwords under 72 bytes when using special characters.</span>
+            <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        </form>
+
+        <p class="auth-footer">
+            Already have an account? <a href="/auth/login" class="link">Log in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
