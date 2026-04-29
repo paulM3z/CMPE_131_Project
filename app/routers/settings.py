@@ -260,6 +260,11 @@ async def update_profile_photo(
         _flash(request, "We couldn't save that image. Please try again.", "error")
         return RedirectResponse(url="/settings", status_code=303)
 
+    # Remove the old photo from disk before saving the new path
+    if current_user.profile_photo_path:
+        old_file = PROFILE_UPLOAD_DIR / Path(current_user.profile_photo_path).name
+        old_file.unlink(missing_ok=True)
+
     user_service.update_profile_photo(db, current_user, saved_path)
     _flash(request, "Profile photo updated.", "success")
     return RedirectResponse(url="/settings", status_code=303)

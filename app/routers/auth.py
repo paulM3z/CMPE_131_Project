@@ -167,8 +167,9 @@ async def login_post(
         )
 
     token = create_access_token(user.id)
-    # Redirect target: where the user originally wanted to go (set by not-auth redirect)
-    next_url = request.query_params.get("next", "/")
+    raw_next = request.query_params.get("next", "/")
+    # Only allow relative paths — reject anything starting with "//" or containing a scheme
+    next_url = raw_next if (raw_next.startswith("/") and not raw_next.startswith("//")) else "/"
 
     response = RedirectResponse(url=next_url, status_code=303)
     response.set_cookie(

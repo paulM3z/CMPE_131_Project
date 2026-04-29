@@ -12,6 +12,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.event import EventCreate
 from app.services import event_service
+from app.services.email_service import send_rsvp_cancellation, send_rsvp_confirmation
 
 router = APIRouter(prefix="/events", tags=["events"])
 templates = Jinja2Templates(directory="app/templates")
@@ -321,6 +322,13 @@ async def rsvp(
     try:
         event_service.rsvp_event(db, current_user, event)
         _flash(request, "You're going! RSVP confirmed.", "success")
+        send_rsvp_confirmation(
+            to_email=current_user.email,
+            username=current_user.username,
+            event_title=event.title,
+            event_date=str(event.event_date),
+            event_location=event.location,
+        )
     except ValueError as e:
         _flash(request, str(e), "error")
 
@@ -341,6 +349,11 @@ async def cancel_rsvp(
     try:
         event_service.cancel_rsvp(db, current_user, event)
         _flash(request, "RSVP cancelled.", "info")
+        send_rsvp_cancellation(
+            to_email=current_user.email,
+            username=current_user.username,
+            event_title=event.title,
+        )
     except ValueError as e:
         _flash(request, str(e), "error")
 

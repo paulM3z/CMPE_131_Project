@@ -11,6 +11,8 @@ Startup order:
 To run:
   uvicorn app.main:app --reload --port 8000
 """
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +24,17 @@ from app.dependencies import ForbiddenException, NotAuthenticatedException
 from app.routers import auth, clubs, events, settings, users
 
 # ---------------------------------------------------------------------------
+# Lifespan
+# ---------------------------------------------------------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_tables()
+    PROFILE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    yield
+
+
+# ---------------------------------------------------------------------------
 # App instance
 # ---------------------------------------------------------------------------
 
@@ -29,9 +42,9 @@ app = FastAPI(
     title="Campus Event & Club Management System",
     description="Manage campus clubs and events.",
     version="1.0.0",
-    # Disable automatic /docs and /redoc in production; fine for development
     docs_url="/api/docs",
     redoc_url="/api/redoc",
+    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------
@@ -72,17 +85,6 @@ async def forbidden_handler(request: Request, exc: ForbiddenException):
     templates = Jinja2Templates(directory="app/templates")
     request.session["flash"] = {"message": exc.message, "category": "error"}
     return RedirectResponse(url="/", status_code=302)
-
-
-# ---------------------------------------------------------------------------
-# Startup: create tables
-# ---------------------------------------------------------------------------
-
-@app.on_event("startup")
-def on_startup():
-    """Initialize database tables on first run."""
-    create_tables()
-    PROFILE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------

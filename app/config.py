@@ -31,6 +31,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
 )
 
+GMAIL_USER: str = os.getenv("GMAIL_USER", "")
+GMAIL_APP_PASSWORD: str = os.getenv("GMAIL_APP_PASSWORD", "")
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROFILE_UPLOAD_DIR = Path(
     os.getenv("PROFILE_UPLOAD_DIR", str(BASE_DIR / "app" / "static" / "uploads" / "profile_photos"))
