@@ -11,6 +11,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.event import EventCreate
+from app.config import MAX_EVENT_CAPACITY
 from app.services import event_service
 from app.services.email_service import send_rsvp_cancellation, send_rsvp_confirmation
 
@@ -20,6 +21,17 @@ templates = Jinja2Templates(directory="app/templates")
 
 def _flash(request: Request, message: str, category: str = "info") -> None:
     request.session["flash"] = {"message": message, "category": category}
+
+
+def _parse_optional_int(value: str, field_name: str) -> int | None:
+    value = value.strip()
+    if not value:
+        return None
+    if not value.isdigit():
+        raise ValueError(f"{field_name} must be a whole number.")
+    if len(value) > len(str(MAX_EVENT_CAPACITY)):
+        raise ValueError(f"{field_name} must be {MAX_EVENT_CAPACITY:,} or less.")
+    return int(value)
 
 
 # ---------------------------------------------------------------------------
@@ -96,9 +108,9 @@ async def create_event_post(
             map_query=map_query or None,
             event_date=event_date,
             event_time=event_time or None,
-            capacity=int(capacity) if capacity.strip() else None,
+            capacity=_parse_optional_int(capacity, "Capacity"),
             is_private=is_private,
-            club_id=int(club_id) if club_id.strip() else None,
+            club_id=_parse_optional_int(club_id, "Hosting club"),
             tags=tag_list,
         )
     except (ValidationError, ValueError) as e:
@@ -244,9 +256,9 @@ async def edit_event_post(
             map_query=map_query or None,
             event_date=event_date,
             event_time=event_time or None,
-            capacity=int(capacity) if capacity.strip() else None,
+            capacity=_parse_optional_int(capacity, "Capacity"),
             is_private=is_private,
-            club_id=int(club_id) if club_id.strip() else None,
+            club_id=_parse_optional_int(club_id, "Hosting club"),
             tags=tag_list,
         )
     except (ValidationError, ValueError) as e:

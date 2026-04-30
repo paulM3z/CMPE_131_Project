@@ -2,6 +2,8 @@
 from datetime import date, time
 from pydantic import BaseModel, field_validator
 
+from app.config import MAX_EVENT_CAPACITY
+
 
 class EventCreate(BaseModel):
     title: str
@@ -38,6 +40,8 @@ class EventCreate(BaseModel):
     def capacity_valid(cls, v: int | None) -> int | None:
         if v is not None and v < 1:
             raise ValueError("Capacity must be at least 1.")
+        if v is not None and v > MAX_EVENT_CAPACITY:
+            raise ValueError(f"Capacity must be {MAX_EVENT_CAPACITY:,} or less.")
         return v
 
     @field_validator("tags")

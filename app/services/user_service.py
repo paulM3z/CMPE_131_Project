@@ -125,12 +125,22 @@ def update_profile_photo(db: Session, user: User, profile_photo_path: str | None
     return user
 
 
+def ensure_user_settings(db: Session, user: User) -> UserSettings:
+    """Return settings for a user, creating the row for older accounts if needed."""
+    if user.settings:
+        return user.settings
+
+    settings = UserSettings(user_id=user.id)
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
+    db.refresh(user)
+    return settings
+
+
 def update_user_settings(db: Session, user: User, data: UserUpdateSettings) -> UserSettings:
     """Update UI preferences (language, theme, text size)."""
-    settings = user.settings
-    if not settings:
-        settings = UserSettings(user_id=user.id)
-        db.add(settings)
+    settings = ensure_user_settings(db, user)
 
     if data.language is not None:
         settings.language = data.language

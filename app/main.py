@@ -11,6 +11,7 @@ Startup order:
 To run:
   uvicorn app.main:app --reload --port 8000
 """
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -18,8 +19,8 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.config import PROFILE_UPLOAD_DIR, SESSION_SECRET_KEY
-from app.database import create_tables
+from app.config import EVENT_REMINDER_CHECK_SECONDS, PROFILE_UPLOAD_DIR, SESSION_SECRET_KEY
+from app.database import SessionLocal, create_tables
 from app.dependencies import ForbiddenException, NotAuthenticatedException
 from app.routers import auth, clubs, events, settings, users
 
@@ -31,7 +32,25 @@ from app.routers import auth, clubs, events, settings, users
 async def lifespan(app: FastAPI):
     create_tables()
     PROFILE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    reminder_task = asyncio.create_task(_event_reminder_loop())
     yield
+    reminder_task.cancel()
+    try:
+        await reminder_task
+    except asyncio.CancelledError:
+        pass
+
+
+async def _event_reminder_loop() -> None:
+    from app.services.reminder_service import send_due_event_reminders
+
+    while True:
+        try:
+            with SessionLocal() as db:
+                send_due_event_reminders(db)
+        except Exception as exc:
+            print(f"[REMINDER ERROR] Failed to process reminders: {exc}")
+        await asyncio.sleep(EVENT_REMINDER_CHECK_SECONDS)
 
 
 # ---------------------------------------------------------------------------

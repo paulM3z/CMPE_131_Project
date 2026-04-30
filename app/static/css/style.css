@@ -885,6 +885,23 @@ a.card:hover { text-decoration: none; }
 .settings-form .form-row { align-items: flex-end; }
 .settings-form .form-row .form-input { margin-bottom: 0; }
 .settings-form-stack { display: flex; flex-direction: column; gap: 0; }
+.account-info-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--space-6);
+  row-gap: var(--space-4);
+  align-items: baseline;
+}
+.account-info-list .detail-item {
+  display: contents;
+}
+.account-info-list .detail-label,
+.account-info-list .detail-value {
+  margin-top: 0;
+}
+.account-info-list .detail-label {
+  white-space: nowrap;
+}
 .info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

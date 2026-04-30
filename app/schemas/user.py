@@ -44,6 +44,7 @@ class UserCreate(BaseModel):
     @field_validator("password")
     @classmethod
     def password_valid(cls, v: str) -> str:
+        v = v.strip()
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters.")
         if len(v.encode("utf-8")) > MAX_BCRYPT_PASSWORD_BYTES:
@@ -55,10 +56,9 @@ class UserCreate(BaseModel):
     def phone_valid(cls, v: str | None) -> str | None:
         if v is None:
             return v
-        # Strip whitespace; allow digits, spaces, dashes, parentheses, +
         v = v.strip()
-        if v and not re.match(r"^[\d\s\-\(\)\+]+$", v):
-            raise ValueError("Phone number contains invalid characters.")
+        if v and not re.match(r"^\d+$", v):
+            raise ValueError("Invalid phone number. Please use numbers only.")
         return v or None
 
 
@@ -108,6 +108,7 @@ class UserUpdatePassword(BaseModel):
     @field_validator("new_password")
     @classmethod
     def new_password_valid(cls, v: str) -> str:
+        v = v.strip()
         if len(v) < 8:
             raise ValueError("New password must be at least 8 characters.")
         if len(v.encode("utf-8")) > MAX_BCRYPT_PASSWORD_BYTES:
@@ -115,7 +116,7 @@ class UserUpdatePassword(BaseModel):
         return v
 
     def passwords_match(self) -> bool:
-        return self.new_password == self.confirm_password
+        return self.new_password == self.confirm_password.strip()
 
 
 class UserUpdatePhone(BaseModel):
@@ -127,8 +128,8 @@ class UserUpdatePhone(BaseModel):
         if v is None:
             return v
         v = v.strip()
-        if v and not re.match(r"^[\d\s\-\(\)\+]+$", v):
-            raise ValueError("Phone number contains invalid characters.")
+        if v and not re.match(r"^\d+$", v):
+            raise ValueError("Invalid phone number. Please use numbers only.")
         return v or None
 
 

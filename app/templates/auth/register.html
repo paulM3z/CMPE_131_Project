@@ -58,7 +58,10 @@
                     name="phone_number"
                     class="form-input"
                     value="{{ form.phone_number if form else '' }}"
-                    placeholder="+1 (408) 555-0123"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="20"
+                    placeholder="4085550123"
                 />
             </div>
 

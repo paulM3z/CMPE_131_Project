@@ -75,3 +75,34 @@ def send_rsvp_cancellation(
         _send(to_email, f"RSVP Cancelled: {event_title}", body)
     except Exception as e:
         print(f"[EMAIL ERROR] Failed to send RSVP cancellation: {e}")
+
+
+def send_event_reminder(
+    to_email: str,
+    username: str,
+    event_title: str,
+    event_date: str,
+    event_time: str | None,
+    event_location: str | None,
+) -> None:
+    time_line = f"<p><b>Time:</b> {event_time}</p>" if event_time else ""
+    location_line = f"<p><b>Location:</b> {event_location}</p>" if event_location else ""
+    body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+        <h2 style="color: #2c3e50;">Upcoming Event Reminder</h2>
+        <p>Hi <b>{username}</b>,</p>
+        <p>This is a reminder that your RSVP'd event is coming up soon:</p>
+        <div style="background:#f4f4f4; padding:16px; border-radius:8px;">
+            <p><b>Event:</b> {event_title}</p>
+            <p><b>Date:</b> {event_date}</p>
+            {time_line}
+            {location_line}
+        </div>
+        <p style="margin-top:16px;">We hope you have a great time!</p>
+        <p style="color:#999; font-size:12px;">CampusHub</p>
+    </div>
+    """
+    try:
+        _send(to_email, f"Reminder: {event_title} is coming up", body)
+    except Exception as e:
+        print(f"[EMAIL ERROR] Failed to send event reminder: {e}")

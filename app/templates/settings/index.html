@@ -26,7 +26,7 @@
                     <form action="/settings/profile-photo" method="post" enctype="multipart/form-data" class="settings-form settings-form-stack">
                         <div class="form-group">
                             <label for="profile_photo" class="form-label">Choose image</label>
-                            <input type="file" id="profile_photo" name="profile_photo" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" required />
+                            <input type="file" id="profile_photo" name="profile_photo" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" required />
                             <span class="form-hint">Files over 20 MB will be rejected before saving.</span>
                         </div>
                         <button type="submit" class="btn btn-primary">Upload Photo</button>
@@ -80,7 +80,8 @@
                     <div class="form-row">
                         <input type="tel" name="phone_number" class="form-input"
                                value="{{ current_user.phone_number or '' }}"
-                               placeholder="+1 (408) 555-0123 (leave blank to remove)" />
+                               inputmode="numeric" pattern="[0-9]*" maxlength="20"
+                               placeholder="4085550123 (leave blank to remove)" />
                         <button type="submit" class="btn btn-primary">Update</button>
                     </div>
                 </form>
@@ -186,7 +187,7 @@
         <h2 class="settings-section-title">Account Info</h2>
         <div class="card settings-card">
             <div class="card-body">
-                <ul class="detail-list">
+                <ul class="account-info-list">
                     <li class="detail-item">
                         <span class="detail-label">Account ID</span>
                         <span class="detail-value muted">#{{ current_user.id }}</span>

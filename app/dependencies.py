@@ -44,6 +44,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not user:
         raise NotAuthenticatedException()
 
+    from app.services.user_service import ensure_user_settings
+    ensure_user_settings(db, user)
     return user
 
 

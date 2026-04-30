@@ -57,8 +57,8 @@ async def register_post(
     errors: list[str] = []
     username = (username or "").strip()
     email = (email or "").strip()
-    password = password or ""
-    confirm_password = confirm_password or ""
+    password = (password or "").strip()
+    confirm_password = (confirm_password or "").strip()
 
     if not username:
         errors.append("Username is required.")
@@ -127,7 +127,7 @@ async def login_post(
     db: Session = Depends(get_db),
 ):
     username = (username or "").strip()
-    password = password or ""
+    password = (password or "").strip()
 
     if not username or not password:
         return templates.TemplateResponse(

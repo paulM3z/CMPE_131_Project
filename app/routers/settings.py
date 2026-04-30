@@ -31,14 +31,14 @@ templates = Jinja2Templates(directory="app/templates")
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
-    "es": "Spanish",
-    "fr": "French",
+    "es": "Español",
+    "fr": "Français",
     "de": "German",
-    "zh": "Chinese",
-    "ja": "Japanese",
-    "ko": "Korean",
-    "pt": "Portuguese",
-    "ar": "Arabic",
+    "zh": "中文",
+    "ja": "日本語",
+    "ko": "한국어",
+    "pt": "Português",
+    "ar": "العربية",
 }
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
@@ -56,23 +56,24 @@ async def _save_profile_photo(upload: UploadFile) -> str:
         raise ValueError("Invalid image type. Please upload JPG, PNG, GIF, or WEBP.")
 
     PROFILE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
+    file_path = PROFILE_UPLOAD_DIR / f"{uuid4().hex}{extension}"
     total_size = 0
-    chunks: list[bytes] = []
     try:
-        while True:
-            chunk = await upload.read(1024 * 1024)
-            if not chunk:
-                break
-            total_size += len(chunk)
-            if total_size > MAX_PROFILE_PHOTO_BYTES:
-                raise ValueError("Upload file exceeds the 20 MB limit.")
-            chunks.append(chunk)
+        with file_path.open("wb") as output:
+            while True:
+                chunk = await upload.read(1024 * 1024)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > MAX_PROFILE_PHOTO_BYTES:
+                    raise ValueError("Upload file exceeds the 20 MB limit.")
+                output.write(chunk)
+    except Exception:
+        file_path.unlink(missing_ok=True)
+        raise
     finally:
         await upload.close()
 
-    file_path = PROFILE_UPLOAD_DIR / f"{uuid4().hex}{extension}"
-    file_path.write_bytes(b"".join(chunks))
     return f"{PROFILE_UPLOAD_WEB_PATH}/{file_path.name}"
 
 
@@ -104,13 +105,13 @@ async def update_username(
 ):
     errors: list[str] = []
     try:
-        data = UserUpdateUsername(username=username)
+        data = UserUpdateUsername(username=username.strip())
     except ValidationError as e:
         for err in e.errors():
             errors.append(err["msg"].replace("Value error, ", ""))
 
     if not errors:
-        existing = user_service.get_user_by_username(db, username)
+        existing = user_service.get_user_by_username(db, data.username)
         if existing and existing.id != current_user.id:
             errors.append("That username is already taken.")
 
@@ -169,9 +170,9 @@ async def update_password(
     current_user: User = Depends(get_current_user),
 ):
     errors: list[str] = []
-    current_password = current_password or ""
-    new_password = new_password or ""
-    confirm_password = confirm_password or ""
+    current_password = (current_password or "").strip()
+    new_password = (new_password or "").strip()
+    confirm_password = (confirm_password or "").strip()
 
     if not current_password:
         errors.append("Current password is required.")
@@ -226,7 +227,7 @@ async def update_phone(
 ):
     errors: list[str] = []
     try:
-        data = UserUpdatePhone(phone_number=phone_number or None)
+        data = UserUpdatePhone(phone_number=phone_number.strip() or None)
     except ValidationError as e:
         for err in e.errors():
             errors.append(err["msg"].replace("Value error, ", ""))
