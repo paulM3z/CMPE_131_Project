@@ -4,7 +4,7 @@ CampusHub is a FastAPI website for managing campus clubs and events.
 
 ## Fastest Setup
 
-### 1. Open the project folder (replace YourUsername with your actual Windows username; Name of the folder may be different)
+### 1. Open the project folder (replace YourUsername with your actual Windows username; Name and location of the folder may be different)
 
 cd C:\Users\YourUsername\Downloads\CMPE_131_Project
 
