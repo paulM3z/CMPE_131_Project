@@ -1015,6 +1015,16 @@ a.card:hover { text-decoration: none; }
   min-height: 280px;
   border: 0;
 }
+.detail-map-block {
+  width: 100%;
+}
+.map-embed-inline {
+  margin-top: var(--space-3);
+  min-height: 180px;
+}
+.map-embed-inline iframe {
+  min-height: 180px;
+}
 
 /* --------------------------------------------------------------------------
    20. Responsive

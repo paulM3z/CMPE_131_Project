@@ -11,6 +11,7 @@ Business rules:
 from datetime import date
 from sqlalchemy.orm import Session
 
+from app.models.club import ClubMembership
 from app.models.event import Event, EventAttendee, Tag
 from app.models.user import User
 from app.schemas.event import EventCreate, EventUpdate
@@ -30,6 +31,7 @@ def list_events(
     limit: int = 100,
     club_id: int | None = None,
     upcoming_only: bool = False,
+    current_user: User | None = None,
 ) -> list[Event]:
     """
     List events with optional filters.
@@ -40,12 +42,15 @@ def list_events(
         query = query.filter(Event.club_id == club_id)
     if upcoming_only:
         query = query.filter(Event.event_date >= date.today())
-    return (
+    events = (
         query.order_by(Event.event_date.asc(), Event.event_time.asc())
              .offset(skip)
              .limit(limit)
              .all()
     )
+    if current_user is None:
+        return events
+    return [event for event in events if can_view_event(db, current_user, event)]
 
 
 def get_rsvp(db: Session, user_id: int, event_id: int) -> EventAttendee | None:
@@ -139,6 +144,9 @@ def rsvp_event(db: Session, user: User, event: Event) -> EventAttendee:
     if existing:
         raise ValueError("You have already RSVP'd to this event.")
 
+    if not can_view_event(db, user, event):
+        raise ValueError("You must be a club member to RSVP to this event.")
+
     if event.is_full:
         raise ValueError(
             f"This event is at capacity ({event.capacity} attendees)."
@@ -163,6 +171,32 @@ def cancel_rsvp(db: Session, user: User, event: Event) -> None:
 # ---------------------------------------------------------------------------
 # Permission checks
 # ---------------------------------------------------------------------------
+
+def is_approved_club_member(db: Session, user_id: int, club_id: int) -> bool:
+    return db.query(ClubMembership).filter(
+        ClubMembership.user_id == user_id,
+        ClubMembership.club_id == club_id,
+        ClubMembership.is_approved == True,
+    ).first() is not None
+
+
+def can_view_event(db: Session, user: User, event: Event) -> bool:
+    if user.is_admin:
+        return True
+    if not event.is_private:
+        return True
+    if event.club_id is None:
+        return event.created_by == user.id
+    return is_approved_club_member(db, user.id, event.club_id)
+
+
+def can_host_club_event(db: Session, user: User, club_id: int | None) -> bool:
+    if club_id is None:
+        return True
+    if user.is_admin:
+        return True
+    return is_approved_club_member(db, user.id, club_id)
+
 
 def can_edit_event(user: User, event: Event) -> bool:
     """

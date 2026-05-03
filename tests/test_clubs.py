@@ -153,6 +153,65 @@ class TestClubMembership:
 
 class TestClubPermissions:
 
+    def test_regular_member_cannot_remove_other_members(self, client, db):
+        # Owner creates the club
+        client.post("/auth/register", data={
+            "username": "ownerremove",
+            "email": "ownerremove@example.com",
+            "password": "password123",
+            "confirm_password": "password123",
+        }, follow_redirects=False)
+        client.post("/auth/login", data={
+            "username": "ownerremove", "password": "password123"
+        }, follow_redirects=False)
+        client.post("/clubs/create", data={
+            "name": "Removal Guard Club", "description": "", "is_private": ""
+        }, follow_redirects=False)
+        client.post("/auth/logout", follow_redirects=False)
+
+        from app.models.club import Club, ClubMembership
+        from app.models.user import User
+        club = db.query(Club).filter(Club.name == "Removal Guard Club").first()
+
+        # Two regular members join
+        client.post("/auth/register", data={
+            "username": "memberremove1",
+            "email": "memberremove1@example.com",
+            "password": "password123",
+            "confirm_password": "password123",
+        }, follow_redirects=False)
+        client.post("/auth/login", data={
+            "username": "memberremove1", "password": "password123"
+        }, follow_redirects=False)
+        client.post(f"/clubs/{club.id}/join", follow_redirects=False)
+        client.post("/auth/logout", follow_redirects=False)
+
+        client.post("/auth/register", data={
+            "username": "memberremove2",
+            "email": "memberremove2@example.com",
+            "password": "password123",
+            "confirm_password": "password123",
+        }, follow_redirects=False)
+        client.post("/auth/login", data={
+            "username": "memberremove2", "password": "password123"
+        }, follow_redirects=False)
+        client.post(f"/clubs/{club.id}/join", follow_redirects=False)
+        target = db.query(User).filter(User.username == "memberremove2").first()
+        client.post("/auth/logout", follow_redirects=False)
+
+        client.post("/auth/login", data={
+            "username": "memberremove1", "password": "password123"
+        }, follow_redirects=False)
+        resp = client.post(
+            f"/clubs/{club.id}/members/{target.id}/remove",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert db.query(ClubMembership).filter(
+            ClubMembership.club_id == club.id,
+            ClubMembership.user_id == target.id,
+        ).first() is not None
+
     def test_non_owner_cannot_delete_club(self, client, db):
         # Owner creates club
         client.post("/auth/register", data={

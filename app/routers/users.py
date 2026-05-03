@@ -25,7 +25,7 @@ async def dashboard(
     """Main dashboard: show the user's clubs and upcoming events."""
     from datetime import date
     user_clubs = get_user_clubs(db, current_user.id)
-    upcoming_events = list_events(db, limit=10, upcoming_only=True)
+    upcoming_events = list_events(db, limit=10, upcoming_only=True, current_user=current_user)
     rsvp_event_ids = {a.event_id for a in current_user.event_attendances}
 
     return templates.TemplateResponse(

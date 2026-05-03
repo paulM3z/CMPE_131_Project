@@ -60,7 +60,7 @@
         </div>
 
         <!-- Club Events -->
-        {% if club.events %}
+        {% if visible_events %}
         <div class="card" style="margin-top: 1.5rem;">
             <div class="card-body">
                 <div class="section-header">
@@ -70,7 +70,7 @@
                     {% endif %}
                 </div>
                 <div class="card-list">
-                    {% for event in club.events | sort(attribute='event_date') %}
+                    {% for event in visible_events | sort(attribute='event_date') %}
                     <a href="/events/{{ event.id }}" class="card card-event card-compact">
                         <div class="card-body">
                             <h4 class="card-title">{{ event.title }}</h4>

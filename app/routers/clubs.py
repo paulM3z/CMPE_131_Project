@@ -13,7 +13,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.club import ClubCreate
-from app.services import club_service
+from app.services import club_service, event_service
 
 router = APIRouter(prefix="/clubs", tags=["clubs"])
 templates = Jinja2Templates(directory="app/templates")
@@ -129,7 +129,7 @@ async def club_detail(
 
     membership = club_service.get_membership(db, current_user.id, club_id)
     is_owner = club_service.is_club_owner(db, current_user.id, club_id)
-    can_manage = club_service.can_manage_members(db, current_user.id, club_id)
+    can_manage = current_user.is_admin or is_owner
 
     # Load all memberships with user info for the member list
     from app.models.club import ClubMembership
@@ -138,6 +138,10 @@ async def club_detail(
         .filter(ClubMembership.club_id == club_id, ClubMembership.is_approved == True)
         .all()
     )
+    visible_events = [
+        event for event in club.events
+        if event_service.can_view_event(db, current_user, event)
+    ]
 
     return templates.TemplateResponse(
         request,
@@ -149,6 +153,7 @@ async def club_detail(
             "is_owner": is_owner,
             "can_manage": can_manage,
             "memberships": memberships,
+            "visible_events": visible_events,
         },
     )
 

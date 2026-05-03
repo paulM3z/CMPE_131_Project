@@ -147,10 +147,19 @@
                     {% endif %}
                     {% if event.google_maps_url %}
                     <li class="detail-item">
-                        <span class="detail-icon">ðŸ—º</span>
-                        <div>
-                            <span class="detail-label">Map</span>
+                        <span class="detail-icon">📍</span>
+                        <div class="detail-map-block">
                             <a href="{{ event.google_maps_url }}" target="_blank" rel="noopener noreferrer" class="detail-value link">Open in Google Maps</a>
+                            {% if event.google_maps_embed_url %}
+                            <div class="map-embed map-embed-inline">
+                                <iframe
+                                    src="{{ event.google_maps_embed_url }}"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    title="Google Maps preview for {{ event.title }}"
+                                ></iframe>
+                            </div>
+                            {% endif %}
                         </div>
                     </li>
                     {% endif %}
@@ -185,22 +194,6 @@
                 </ul>
             </div>
         </div>
-
-        {% if event.google_maps_embed_url %}
-        <div class="card" style="margin-top:1rem">
-            <div class="card-body">
-                <h3 class="card-section-title">Map Preview</h3>
-                <div class="map-embed">
-                    <iframe
-                        src="{{ event.google_maps_embed_url }}"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        title="Map preview for {{ event.title }}"
-                    ></iframe>
-                </div>
-            </div>
-        </div>
-        {% endif %}
 
         {% if can_edit %}
         <div class="card card-danger" style="margin-top:1rem">

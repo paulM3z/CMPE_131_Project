@@ -9,9 +9,11 @@ Business rules:
   - A user cannot join a club they're already in
   - Only the Owner (or system admin) can remove members or delete the club
 """
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.club import Club, ClubMembership, ClubRole
+from app.models.event import Event, EventAttendee
 from app.models.user import User
 from app.schemas.club import ClubCreate, ClubUpdate
 
@@ -81,15 +83,20 @@ def is_club_owner(db: Session, user_id: int, club_id: int) -> bool:
 
 
 def can_manage_members(db: Session, user_id: int, club_id: int) -> bool:
-    """Return True if the user can add/remove members (Owner or role with permission)."""
-    membership = get_membership(db, user_id, club_id)
-    if not membership:
-        return False
-    if membership.role and membership.role.name == "Owner":
-        return True
-    if membership.role and membership.role.can_manage_members:
-        return True
-    return False
+    """Return True if the user can add/remove members for this club."""
+    return is_club_owner(db, user_id, club_id)
+
+
+def _delete_member_club_event_rsvps(db: Session, user_id: int, club_id: int) -> int:
+    club_event_ids = select(Event.id).where(Event.club_id == club_id)
+    return (
+        db.query(EventAttendee)
+        .filter(
+            EventAttendee.user_id == user_id,
+            EventAttendee.event_id.in_(club_event_ids),
+        )
+        .delete(synchronize_session=False)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +217,7 @@ def leave_club(db: Session, user: User, club: Club) -> None:
                 "You are the only owner. Transfer ownership before leaving."
             )
 
+    _delete_member_club_event_rsvps(db, user.id, club.id)
     db.delete(membership)
     db.commit()
 
@@ -219,6 +227,7 @@ def remove_member(db: Session, target_user_id: int, club: Club) -> None:
     membership = get_membership(db, target_user_id, club.id)
     if not membership:
         raise ValueError("That user is not a member of this club.")
+    _delete_member_club_event_rsvps(db, target_user_id, club.id)
     db.delete(membership)
     db.commit()
 

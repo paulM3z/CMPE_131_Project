@@ -112,6 +112,70 @@ class TestEventCreation:
         assert event.map_query == "San Jose State University Student Union"
         assert "google.com/maps" in event.google_maps_url
 
+    def test_capacity_can_be_50000(self, logged_in_client, db):
+        resp = logged_in_client.post("/events/create", data={
+            "title": "Large Capacity Event",
+            "event_date": "2025-07-12",
+            "description": "",
+            "location": "",
+            "map_query": "",
+            "event_time": "",
+            "capacity": "50000",
+            "is_private": "",
+            "club_id": "",
+            "tags": "",
+        }, follow_redirects=False)
+        assert resp.status_code == 303
+
+        from app.models.event import Event
+        event = db.query(Event).filter(Event.title == "Large Capacity Event").first()
+        assert event is not None
+        assert event.capacity == 50000
+
+    def test_capacity_over_50000_rejected(self, logged_in_client):
+        resp = logged_in_client.post("/events/create", data={
+            "title": "Too Large Event",
+            "event_date": "2025-07-12",
+            "description": "",
+            "location": "",
+            "map_query": "",
+            "event_time": "",
+            "capacity": "50001",
+            "is_private": "",
+            "club_id": "",
+            "tags": "",
+        }, follow_redirects=False)
+        assert resp.status_code == 422
+
+    def test_private_club_event_hidden_from_non_members(self, client, db):
+        _register_and_login(client, "clubhost", "clubhost@example.com")
+        client.post("/clubs/create", data={
+            "name": "Private Events Club",
+            "description": "",
+            "is_private": "",
+        }, follow_redirects=False)
+
+        from app.models.club import Club
+        club = db.query(Club).filter(Club.name == "Private Events Club").first()
+        client.post("/events/create", data={
+            "title": "Members Only Mixer",
+            "event_date": "2025-07-13",
+            "description": "Only approved club members should see this.",
+            "location": "",
+            "map_query": "",
+            "event_time": "",
+            "capacity": "",
+            "is_private": "true",
+            "club_id": str(club.id),
+            "tags": "",
+        }, follow_redirects=False)
+        client.post("/auth/logout", follow_redirects=False)
+
+        _register_and_login(client, "outsider", "outsider@example.com")
+        resp = client.get("/events")
+        assert resp.status_code == 200
+        assert b"Members Only Mixer" not in resp.content
+
     def test_event_hype_meter_properties(self, logged_in_client, db):
         logged_in_client.post("/events/create", data={
             "title": "Hype Event",
@@ -297,3 +361,42 @@ class TestEventRSVP:
         from app.models.event import EventAttendee
         count = db.query(EventAttendee).filter(EventAttendee.event_id == event.id).count()
         assert count == 0
+
+    def test_leaving_club_removes_club_event_rsvps(self, client, db):
+        _register_and_login(client, "clubowner", "clubowner@example.com")
+        client.post("/clubs/create", data={
+            "name": "RSVP Cleanup Club",
+            "description": "",
+            "is_private": "",
+        }, follow_redirects=False)
+
+        from app.models.club import Club
+        club = db.query(Club).filter(Club.name == "RSVP Cleanup Club").first()
+        client.post("/events/create", data={
+            "title": "Cleanup Club Event",
+            "event_date": "2025-12-20",
+            "description": "",
+            "location": "",
+            "map_query": "",
+            "event_time": "",
+            "capacity": "",
+            "is_private": "true",
+            "club_id": str(club.id),
+            "tags": "",
+        }, follow_redirects=False)
+        client.post("/auth/logout", follow_redirects=False)
+
+        _register_and_login(client, "clubmember", "clubmember@example.com")
+        client.post(f"/clubs/{club.id}/join", follow_redirects=False)
+
+        from app.models.event import Event, EventAttendee
+        event = db.query(Event).filter(Event.title == "Cleanup Club Event").first()
+        client.post(f"/events/{event.id}/rsvp", follow_redirects=False)
+        assert db.query(EventAttendee).filter(
+            EventAttendee.event_id == event.id
+        ).count() == 1
+
+        client.post(f"/clubs/{club.id}/leave", follow_redirects=False)
+        assert db.query(EventAttendee).filter(
+            EventAttendee.event_id == event.id
+        ).count() == 0

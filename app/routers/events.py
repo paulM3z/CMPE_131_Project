@@ -29,9 +29,10 @@ def _parse_optional_int(value: str, field_name: str) -> int | None:
         return None
     if not value.isdigit():
         raise ValueError(f"{field_name} must be a whole number.")
-    if len(value) > len(str(MAX_EVENT_CAPACITY)):
+    parsed = int(value)
+    if parsed > MAX_EVENT_CAPACITY:
         raise ValueError(f"{field_name} must be {MAX_EVENT_CAPACITY:,} or less.")
-    return int(value)
+    return parsed
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +46,7 @@ async def event_list(
     current_user: User = Depends(get_current_user),
 ):
     from datetime import date
-    events = event_service.list_events(db, upcoming_only=False)
+    events = event_service.list_events(db, upcoming_only=False, current_user=current_user)
     # Build set of event IDs the user has RSVP'd to for the template
     rsvp_event_ids = {a.event_id for a in current_user.event_attendances}
     return templates.TemplateResponse(
@@ -101,6 +102,12 @@ async def create_event_post(
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
     try:
+        parsed_club_id = _parse_optional_int(club_id, "Hosting club")
+        if is_private and parsed_club_id is None:
+            raise ValueError("Private events must be hosted by a club.")
+        if not event_service.can_host_club_event(db, current_user, parsed_club_id):
+            raise ValueError("You can only host events for clubs you belong to.")
+
         data = EventCreate(
             title=title,
             description=description or None,
@@ -110,7 +117,7 @@ async def create_event_post(
             event_time=event_time or None,
             capacity=_parse_optional_int(capacity, "Capacity"),
             is_private=is_private,
-            club_id=_parse_optional_int(club_id, "Hosting club"),
+            club_id=parsed_club_id,
             tags=tag_list,
         )
     except (ValidationError, ValueError) as e:
@@ -158,6 +165,9 @@ async def event_detail(
     if not event:
         _flash(request, "Event not found.", "error")
         return RedirectResponse(url="/events", status_code=302)
+    if not event_service.can_view_event(db, current_user, event):
+        _flash(request, "You must be a club member to view that event.", "error")
+        return RedirectResponse(url="/events", status_code=302)
 
     rsvp = event_service.get_rsvp(db, current_user.id, event_id)
     can_edit = event_service.can_edit_event(current_user, event)
@@ -187,6 +197,9 @@ async def edit_event_get(
 ):
     event = event_service.get_event_by_id(db, event_id)
     if not event:
+        return RedirectResponse(url="/events", status_code=302)
+    if not event_service.can_view_event(db, current_user, event):
+        _flash(request, "You must be a club member to view that event.", "error")
         return RedirectResponse(url="/events", status_code=302)
     if not event_service.can_edit_event(current_user, event):
         _flash(request, "You don't have permission to edit this event.", "error")
@@ -249,6 +262,12 @@ async def edit_event_post(
 
     try:
         from app.schemas.event import EventUpdate
+        parsed_club_id = _parse_optional_int(club_id, "Hosting club")
+        if is_private and parsed_club_id is None:
+            raise ValueError("Private events must be hosted by a club.")
+        if not event_service.can_host_club_event(db, current_user, parsed_club_id):
+            raise ValueError("You can only host events for clubs you belong to.")
+
         data = EventUpdate(
             title=title,
             description=description or None,
@@ -258,7 +277,7 @@ async def edit_event_post(
             event_time=event_time or None,
             capacity=_parse_optional_int(capacity, "Capacity"),
             is_private=is_private,
-            club_id=_parse_optional_int(club_id, "Hosting club"),
+            club_id=parsed_club_id,
             tags=tag_list,
         )
     except (ValidationError, ValueError) as e:
@@ -329,6 +348,9 @@ async def rsvp(
     event = event_service.get_event_by_id(db, event_id)
     if not event:
         _flash(request, "Event not found.", "error")
+        return RedirectResponse(url="/events", status_code=303)
+    if not event_service.can_view_event(db, current_user, event):
+        _flash(request, "You must be a club member to RSVP to this event.", "error")
         return RedirectResponse(url="/events", status_code=303)
 
     try:
